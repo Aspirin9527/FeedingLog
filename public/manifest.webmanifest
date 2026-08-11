@@ -1,0 +1,9 @@
+{
+  "name": "喂奶记录",
+  "short_name": "喂奶记录",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7fbf9",
+  "theme_color": "#f7fbf9",
+  "icons": []
+}
