@@ -331,6 +331,7 @@ input:focus {
 .calendar-day {
   display: grid;
   align-content: space-between;
+  min-width: 0;
   border: 1px solid #dde7e2;
   padding: 8px;
   text-align: left;
@@ -347,6 +348,25 @@ input:focus {
   min-height: 18px;
   color: #d25f43;
   font-size: 12px;
+}
+
+.calendar-day-total {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 1px;
+  line-height: 1.1;
+  white-space: normal;
+}
+
+.calendar-day-total-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.calendar-day-total-unit {
+  flex: 0 0 auto;
+  font-size: 10px;
 }
 
 .daily-total {
@@ -510,5 +530,11 @@ input:focus {
   .calendar-day {
     min-height: 54px;
     padding: 6px;
+  }
+
+  .calendar-day-total {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
   }
 }

@@ -65,7 +65,14 @@ export function CalendarView({
                 onClick={() => onSelectedDateChange(date)}
               >
                 <span>{Number(date.slice(8, 10))}</span>
-                <strong>{summary ? `${summary.totalMl}ml` : ''}</strong>
+                <strong className="calendar-day-total">
+                  {summary ? (
+                    <>
+                      <span className="calendar-day-total-value">{summary.totalMl}</span>
+                      <span className="calendar-day-total-unit">ml</span>
+                    </>
+                  ) : null}
+                </strong>
               </button>
             );
           })}
