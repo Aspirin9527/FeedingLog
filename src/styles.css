@@ -181,6 +181,15 @@ input {
   background: #ffffff;
 }
 
+select {
+  min-height: 46px;
+  border: 1px solid #ccd9d4;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #1f2c28;
+  background: #ffffff;
+}
+
 input:focus {
   border-color: #16847b;
   outline: 3px solid rgba(22, 132, 123, 0.16);
@@ -418,6 +427,53 @@ input:focus {
   gap: 20px;
 }
 
+.cloud-panel h1 {
+  margin: 0;
+}
+
+.cloud-form {
+  display: grid;
+  gap: 14px;
+}
+
+.family-actions {
+  display: grid;
+  gap: 18px;
+}
+
+.cloud-toolbar {
+  display: flex;
+  width: min(1120px, calc(100% - 40px));
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px auto 0;
+  border: 1px solid rgba(122, 139, 132, 0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #40504b;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.cloud-toolbar label {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+}
+
+.cloud-toolbar select {
+  min-width: 0;
+  flex: 1;
+}
+
+.cloud-toolbar > span {
+  color: #64736e;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .backup-actions {
   display: flex;
   flex-wrap: wrap;
@@ -512,6 +568,20 @@ input:focus {
 
   .stat-row {
     grid-template-columns: 1fr;
+  }
+
+  .cloud-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cloud-toolbar label {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cloud-toolbar > span {
+    white-space: normal;
   }
 }
 

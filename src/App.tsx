@@ -6,16 +6,11 @@ import { HomeView } from './components/HomeView';
 import { StatsView } from './components/StatsView';
 import { buildBackup, getDateKey, mergeImportedRecords, parseBackup, summarizeByDay } from './domain/feeding';
 import { FeedingStore } from './storage/feedingStore';
+import type { FeedingStoreApi } from './storage/storeTypes';
 import type { DailySummary, FeedingRecord } from './types';
 
 type View = 'home' | 'calendar' | 'stats' | 'backup';
-
-export interface FeedingStoreApi {
-  getAll(): Promise<FeedingRecord[]>;
-  save(record: FeedingRecord): Promise<void>;
-  delete(id: string): Promise<void>;
-  replaceAll(records: FeedingRecord[]): Promise<void>;
-}
+export type { FeedingStoreApi } from './storage/storeTypes';
 
 interface AppProps {
   store?: FeedingStoreApi;
@@ -50,6 +45,16 @@ export default function App({ store = defaultStore, now = () => new Date().toISO
     return () => {
       isMounted = false;
     };
+  }, [store]);
+
+  useEffect(() => {
+    if (!store.subscribe) {
+      return undefined;
+    }
+
+    return store.subscribe((items) => {
+      setRecords(items);
+    });
   }, [store]);
 
   const summaries = useMemo(() => summarizeByDay(records), [records]);
