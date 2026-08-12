@@ -353,6 +353,7 @@ input:focus {
 .calendar-day-total {
   display: flex;
   min-width: 0;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 1px;
   line-height: 1.1;
@@ -360,13 +361,14 @@ input:focus {
 }
 
 .calendar-day-total-value {
-  min-width: 0;
-  overflow-wrap: anywhere;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .calendar-day-total-unit {
   flex: 0 0 auto;
   font-size: 10px;
+  white-space: nowrap;
 }
 
 .daily-total {
@@ -530,11 +532,5 @@ input:focus {
   .calendar-day {
     min-height: 54px;
     padding: 6px;
-  }
-
-  .calendar-day-total {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0;
   }
 }
