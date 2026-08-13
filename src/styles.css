@@ -484,6 +484,17 @@ input:focus {
   white-space: nowrap;
 }
 
+.admin-tools-wrapper {
+  width: min(1120px, 100%);
+  margin: 16px auto 0;
+  padding: 0 20px;
+}
+
+.admin-reset-panel h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
 .backup-actions {
   display: flex;
   flex-wrap: wrap;
@@ -592,6 +603,10 @@ input:focus {
 
   .cloud-toolbar > span {
     white-space: normal;
+  }
+
+  .admin-tools-wrapper {
+    padding: 0 14px;
   }
 }
 

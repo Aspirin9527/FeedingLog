@@ -36,6 +36,7 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [showAdminTools, setShowAdminTools] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -156,10 +157,20 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
           </select>
         </label>
         <span>邀请码：{selectedFamily.inviteCode}</span>
+        <button className="secondary-button" type="button" onClick={() => setShowAdminTools((value) => !value)}>
+          管理员
+        </button>
         <button className="secondary-button" type="button" onClick={() => familyService.signOut()}>
           退出
         </button>
       </div>
+      {showAdminTools ? (
+        <div className="admin-tools-wrapper">
+          <AdminResetPasswordPanel
+            onResetPassword={(account, password) => familyService.resetUserPasswordAsAdmin(account, password)}
+          />
+        </div>
+      ) : null}
       <App key={selectedFamily.id} store={store} />
     </>
   );
@@ -177,6 +188,7 @@ export function AuthPanel({
   const [mode, setMode] = useState<'signIn' | 'register'>('signIn');
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -184,6 +196,10 @@ export function AuthPanel({
     try {
       setError('');
       if (mode === 'register') {
+        if (password !== confirmPassword) {
+          setError('两次输入的密码不一致');
+          return;
+        }
         await onRegister(account, password);
       } else {
         await onSignIn(account, password);
@@ -195,6 +211,7 @@ export function AuthPanel({
 
   function switchMode(nextMode: 'signIn' | 'register') {
     setMode(nextMode);
+    setConfirmPassword('');
     setError('');
   }
 
@@ -241,6 +258,20 @@ export function AuthPanel({
           />
         </label>
 
+        {mode === 'register' ? (
+          <label>
+            <span>确认密码</span>
+            <input
+              autoComplete="new-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              required
+              minLength={6}
+            />
+          </label>
+        ) : null}
+
         <button className="primary-button" type="submit">
           {mode === 'register' ? '注册并登录' : '登录'}
         </button>
@@ -249,6 +280,78 @@ export function AuthPanel({
         {error ? <p className="error-text">{error}</p> : null}
       </form>
     </CloudPanel>
+  );
+}
+
+export function AdminResetPasswordPanel({
+  onResetPassword,
+}: {
+  onResetPassword: (account: string, password: string) => Promise<void>;
+}) {
+  const [account, setAccount] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (password !== confirmPassword) {
+      setMessage('');
+      setError('两次输入的新密码不一致');
+      return;
+    }
+
+    try {
+      setError('');
+      await onResetPassword(account, password);
+      setMessage('密码已重置');
+      setPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setMessage('');
+      setError(err instanceof Error ? err.message : '密码重置失败');
+    }
+  }
+
+  return (
+    <section className="backup-panel admin-reset-panel" aria-labelledby="admin-reset-title">
+      <div>
+        <p className="eyebrow">管理员工具</p>
+        <h2 id="admin-reset-title">重置用户密码</h2>
+      </div>
+      <form className="cloud-form" onSubmit={submit}>
+        <label>
+          <span>重置账号</span>
+          <input value={account} onChange={(event) => setAccount(event.target.value)} required />
+        </label>
+        <label>
+          <span>新密码</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            minLength={6}
+            required
+          />
+        </label>
+        <label>
+          <span>确认新密码</span>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            minLength={6}
+            required
+          />
+        </label>
+        <button className="primary-button" type="submit">
+          重置密码
+        </button>
+      </form>
+      {message ? <p className="status-message">{message}</p> : null}
+      {error ? <p className="error-text">{error}</p> : null}
+    </section>
   );
 }
 

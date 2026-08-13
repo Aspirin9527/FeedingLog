@@ -96,6 +96,23 @@ export class FamilyService {
     return data.session;
   }
 
+  async resetUserPasswordAsAdmin(account: string, password: string): Promise<void> {
+    validatePassword(password);
+    const normalizedAccount = normalizeAccount(account);
+    validateAccount(normalizedAccount);
+
+    const { error } = await this.client.functions.invoke('admin-reset-password', {
+      body: {
+        account: normalizedAccount,
+        password,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+  }
+
   async signOut(): Promise<void> {
     const { error } = await this.client.auth.signOut();
     if (error) {

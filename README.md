@@ -51,6 +51,27 @@ npm run dev
 ## 账号注册说明
 
 - 页面只要求输入自定义账号和密码。
+- 注册时需要二次输入密码，前端会校验两次输入一致。
 - 账号只允许使用 `3-32` 位字母、数字或下划线。
 - 内部会把账号映射到 Supabase Auth 使用的本地域名邮箱，用户不需要填写邮箱。
 - Supabase 项目需要关闭 Email Provider 的 `Confirm email`，否则注册后仍会要求邮箱确认。
+
+## 密码重置说明
+
+- 密码重置通过 Supabase Edge Function `admin-reset-password` 完成。
+- 前端只调用 Edge Function，不暴露 Supabase `service_role` 到浏览器。
+- 只有 `app_admins` 表中的管理员用户可以重置其他用户密码。
+- 管理员需要输入目标账号、新密码和确认新密码。
+
+### 配置管理员重置密码
+
+1. 在 Supabase SQL Editor 执行 `docs/supabase-admin-reset.sql`。
+2. 注册一个管理员账号，例如 `admin_account`。
+3. 修改 `docs/supabase-admin-reset.sql` 中的 `admin_account@feedinglog.local` 并执行插入语句。
+4. 部署 Edge Function：
+
+```bash
+supabase functions deploy admin-reset-password
+```
+
+5. 确认 Supabase Function Secrets 中存在 `SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEYS`、`SUPABASE_SECRET_KEYS`。

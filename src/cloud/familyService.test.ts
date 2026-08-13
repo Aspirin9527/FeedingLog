@@ -56,4 +56,18 @@ describe('FamilyService account auth', () => {
       password: 'password123',
     });
   });
+
+  it('requests an admin password reset through an Edge Function', async () => {
+    const invoke = vi.fn().mockResolvedValue({ data: { ok: true }, error: null });
+    const service = new FamilyService({ functions: { invoke } } as never);
+
+    await service.resetUserPasswordAsAdmin('Baby_Home', 'newpass123');
+
+    expect(invoke).toHaveBeenCalledWith('admin-reset-password', {
+      body: {
+        account: 'baby_home',
+        password: 'newpass123',
+      },
+    });
+  });
 });
