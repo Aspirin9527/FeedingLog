@@ -113,6 +113,20 @@ export class FamilyService {
     }
   }
 
+  async isCurrentUserAdmin(userId: string): Promise<boolean> {
+    const { data, error } = await this.client
+      .from('app_admins')
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return Boolean(data);
+  }
+
   async signOut(): Promise<void> {
     const { error } = await this.client.auth.signOut();
     if (error) {

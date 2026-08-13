@@ -70,4 +70,28 @@ describe('FamilyService account auth', () => {
       },
     });
   });
+
+  it('checks whether the current user is an app admin', async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: { user_id: 'user-1' }, error: null });
+    const eq = vi.fn().mockReturnValue({ maybeSingle });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    const service = new FamilyService({ from } as never);
+
+    await expect(service.isCurrentUserAdmin('user-1')).resolves.toBe(true);
+
+    expect(from).toHaveBeenCalledWith('app_admins');
+    expect(select).toHaveBeenCalledWith('user_id');
+    expect(eq).toHaveBeenCalledWith('user_id', 'user-1');
+  });
+
+  it('returns false when the current user is not an app admin', async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const eq = vi.fn().mockReturnValue({ maybeSingle });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    const service = new FamilyService({ from } as never);
+
+    await expect(service.isCurrentUserAdmin('user-2')).resolves.toBe(false);
+  });
 });

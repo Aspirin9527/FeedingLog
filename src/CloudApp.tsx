@@ -36,6 +36,7 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminTools, setShowAdminTools] = useState(false);
 
   useEffect(() => {
@@ -68,6 +69,8 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
     if (!session) {
       setFamilies([]);
       setSelectedFamilyId('');
+      setIsAdmin(false);
+      setShowAdminTools(false);
       localStorage.removeItem(selectedFamilyStorageKey);
       return;
     }
@@ -81,6 +84,19 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
         }
       })
       .catch(() => setMessage('家庭数据读取失败'));
+
+    familyService
+      .isCurrentUserAdmin(session.user.id)
+      .then((value) => {
+        setIsAdmin(value);
+        if (!value) {
+          setShowAdminTools(false);
+        }
+      })
+      .catch(() => {
+        setIsAdmin(false);
+        setShowAdminTools(false);
+      });
   }, [familyService, selectedFamilyId, session]);
 
   const selectedFamily = useMemo(
@@ -157,14 +173,16 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
           </select>
         </label>
         <span>邀请码：{selectedFamily.inviteCode}</span>
-        <button className="secondary-button" type="button" onClick={() => setShowAdminTools((value) => !value)}>
-          管理员
-        </button>
+        {isAdmin ? (
+          <button className="secondary-button" type="button" onClick={() => setShowAdminTools((value) => !value)}>
+            管理员
+          </button>
+        ) : null}
         <button className="secondary-button" type="button" onClick={() => familyService.signOut()}>
           退出
         </button>
       </div>
-      {showAdminTools ? (
+      {isAdmin && showAdminTools ? (
         <div className="admin-tools-wrapper">
           <AdminResetPasswordPanel
             onResetPassword={(account, password) => familyService.resetUserPasswordAsAdmin(account, password)}
