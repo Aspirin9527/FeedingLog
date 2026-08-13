@@ -1,5 +1,8 @@
 import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
 
+const accountPattern = /^[a-z0-9_]{3,32}$/;
+const authEmailDomain = 'feedinglog.local';
+
 export interface SupabaseConfig {
   url: string;
   anonKey: string;
@@ -32,6 +35,12 @@ export function createSupabaseClient(config: SupabaseConfig): SupabaseClient {
   return createClient(config.url, config.anonKey);
 }
 
+export function accountToAuthEmail(account: string): string {
+  const normalizedAccount = normalizeAccount(account);
+  validateAccount(normalizedAccount);
+  return `${normalizedAccount}@${authEmailDomain}`;
+}
+
 export class FamilyService {
   constructor(private readonly client: SupabaseClient) {}
 
@@ -52,28 +61,36 @@ export class FamilyService {
     return () => data.subscription.unsubscribe();
   }
 
-  async sendEmailCode(email: string): Promise<void> {
-    const { error } = await this.client.auth.signInWithOtp({
+  async registerWithAccount(account: string, password: string): Promise<Session | null> {
+    validatePassword(password);
+    const normalizedAccount = normalizeAccount(account);
+    const email = accountToAuthEmail(normalizedAccount);
+    const { data, error } = await this.client.auth.signUp({
       email,
+      password,
       options: {
-        shouldCreateUser: true,
+        data: {
+          account: normalizedAccount,
+        },
       },
     });
 
     if (error) {
-      throw error;
+      throw normalizeAuthError(error);
     }
+
+    return data.session;
   }
 
-  async verifyEmailCode(email: string, token: string): Promise<Session | null> {
-    const { data, error } = await this.client.auth.verifyOtp({
-      email,
-      token,
-      type: 'email',
+  async signInWithAccount(account: string, password: string): Promise<Session | null> {
+    validatePassword(password);
+    const { data, error } = await this.client.auth.signInWithPassword({
+      email: accountToAuthEmail(account),
+      password,
     });
 
     if (error) {
-      throw error;
+      throw new Error('账号或密码错误');
     }
 
     return data.session;
@@ -124,6 +141,31 @@ export class FamilyService {
 
     return rowToFamily(normalizeRpcFamily(data));
   }
+}
+
+function normalizeAccount(account: string): string {
+  return account.trim().toLowerCase();
+}
+
+function validateAccount(account: string): void {
+  if (!accountPattern.test(account)) {
+    throw new Error('账号只能使用 3-32 位字母、数字或下划线');
+  }
+}
+
+function validatePassword(password: string): void {
+  if (password.length < 6) {
+    throw new Error('密码至少需要 6 位');
+  }
+}
+
+function normalizeAuthError(error: Error): Error {
+  const message = error.message.toLowerCase();
+  if (message.includes('registered') || message.includes('already') || message.includes('duplicate')) {
+    return new Error('账号已存在');
+  }
+
+  return error;
 }
 
 function rowToFamily(row: FamilyRow): Family {

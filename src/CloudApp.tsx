@@ -76,8 +76,7 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
       .then((items) => {
         setFamilies(items);
         if (!items.some((family) => family.id === selectedFamilyId)) {
-          const firstFamilyId = items[0]?.id ?? '';
-          updateSelectedFamily(firstFamilyId);
+          updateSelectedFamily(items[0]?.id ?? '');
         }
       })
       .catch(() => setMessage('家庭数据读取失败'));
@@ -120,12 +119,12 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
     return (
       <AuthPanel
         message={message}
-        onSendCode={async (email) => {
-          await familyService.sendEmailCode(email);
-          setMessage('验证码已发送，请查看邮箱');
+        onSignIn={async (account, password) => {
+          await familyService.signInWithAccount(account, password);
         }}
-        onVerifyCode={async (email, token) => {
-          await familyService.verifyEmailCode(email, token);
+        onRegister={async (account, password) => {
+          await familyService.registerWithAccount(account, password);
+          setMessage('账号注册成功');
         }}
       />
     );
@@ -168,77 +167,83 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
 
 export function AuthPanel({
   message,
-  onSendCode,
-  onVerifyCode,
+  onSignIn,
+  onRegister,
 }: {
   message: string;
-  onSendCode: (email: string) => Promise<void>;
-  onVerifyCode: (email: string, token: string) => Promise<void>;
+  onSignIn: (account: string, password: string) => Promise<void>;
+  onRegister: (account: string, password: string) => Promise<void>;
 }) {
-  const [email, setEmail] = useState('');
-  const [token, setToken] = useState('');
-  const [hasSentCode, setHasSentCode] = useState(false);
+  const [mode, setMode] = useState<'signIn' | 'register'>('signIn');
+  const [account, setAccount] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  async function sendCode(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
       setError('');
-      await onSendCode(email);
-      setHasSentCode(true);
-    } catch {
-      setError('验证码发送失败，请稍后重试');
+      if (mode === 'register') {
+        await onRegister(account, password);
+      } else {
+        await onSignIn(account, password);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '操作失败，请稍后重试');
     }
   }
 
-  async function verifyCode(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      setError('');
-      await onVerifyCode(email, token);
-    } catch {
-      setError('验证码错误或已过期');
-    }
+  function switchMode(nextMode: 'signIn' | 'register') {
+    setMode(nextMode);
+    setError('');
   }
 
   return (
     <CloudPanel title="登录后同步家庭记录">
-      <form className="cloud-form" onSubmit={hasSentCode ? verifyCode : sendCode}>
+      <div className="auth-mode-tabs" role="group" aria-label="账号操作">
+        <button
+          className={mode === 'signIn' ? 'tab-button active' : 'tab-button'}
+          type="button"
+          onClick={() => switchMode('signIn')}
+        >
+          已有账号登录
+        </button>
+        <button
+          className={mode === 'register' ? 'tab-button active' : 'tab-button'}
+          type="button"
+          onClick={() => switchMode('register')}
+        >
+          注册账号
+        </button>
+      </div>
+
+      <form className="cloud-form" onSubmit={submit}>
         <label>
-          <span>邮箱</span>
-          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          <span>账号</span>
+          <input
+            autoComplete="username"
+            value={account}
+            onChange={(event) => setAccount(event.target.value)}
+            placeholder="3-32 位字母、数字或下划线"
+            required
+          />
         </label>
 
-        {hasSentCode ? (
-          <label>
-            <span>验证码</span>
-            <input
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              value={token}
-              onChange={(event) => setToken(event.target.value.trim())}
-              required
-            />
-          </label>
-        ) : null}
+        <label>
+          <span>密码</span>
+          <input
+            autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            minLength={6}
+          />
+        </label>
 
         <button className="primary-button" type="submit">
-          {hasSentCode ? '登录' : '发送验证码'}
+          {mode === 'register' ? '注册并登录' : '登录'}
         </button>
-
-        {hasSentCode ? (
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => {
-              setToken('');
-              setHasSentCode(false);
-              setError('');
-            }}
-          >
-            重新发送验证码
-          </button>
-        ) : null}
 
         {message ? <p className="status-message">{message}</p> : null}
         {error ? <p className="error-text">{error}</p> : null}

@@ -436,6 +436,16 @@ input:focus {
   gap: 14px;
 }
 
+.auth-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  border: 1px solid rgba(122, 139, 132, 0.25);
+  border-radius: 8px;
+  padding: 6px;
+  background: #ffffff;
+}
+
 .family-actions {
   display: grid;
   gap: 18px;
