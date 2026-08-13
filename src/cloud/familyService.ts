@@ -52,17 +52,31 @@ export class FamilyService {
     return () => data.subscription.unsubscribe();
   }
 
-  async sendSignInLink(email: string): Promise<void> {
+  async sendEmailCode(email: string): Promise<void> {
     const { error } = await this.client.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: window.location.origin,
+        shouldCreateUser: true,
       },
     });
 
     if (error) {
       throw error;
     }
+  }
+
+  async verifyEmailCode(email: string, token: string): Promise<Session | null> {
+    const { data, error } = await this.client.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data.session;
   }
 
   async signOut(): Promise<void> {

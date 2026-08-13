@@ -77,12 +77,23 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
         setFamilies(items);
         if (!items.some((family) => family.id === selectedFamilyId)) {
           const firstFamilyId = items[0]?.id ?? '';
-          setSelectedFamilyId(firstFamilyId);
           updateSelectedFamily(firstFamilyId);
         }
       })
       .catch(() => setMessage('家庭数据读取失败'));
   }, [familyService, selectedFamilyId, session]);
+
+  const selectedFamily = useMemo(
+    () => families.find((family) => family.id === selectedFamilyId),
+    [families, selectedFamilyId],
+  );
+  const store = useMemo(() => {
+    if (!session || !selectedFamily) {
+      return null;
+    }
+
+    return new SupabaseFeedingStore(client, selectedFamily.id, session.user.id);
+  }, [client, selectedFamily, session]);
 
   function updateSelectedFamily(familyId: string) {
     setSelectedFamilyId(familyId);
@@ -108,18 +119,19 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
   if (!session) {
     return (
       <AuthPanel
-        onSubmit={async (email) => {
-          await familyService.sendSignInLink(email);
-          setMessage('登录邮件已发送，请在邮箱中打开链接');
-        }}
         message={message}
+        onSendCode={async (email) => {
+          await familyService.sendEmailCode(email);
+          setMessage('验证码已发送，请查看邮箱');
+        }}
+        onVerifyCode={async (email, token) => {
+          await familyService.verifyEmailCode(email, token);
+        }}
       />
     );
   }
 
-  const selectedFamily = families.find((family) => family.id === selectedFamilyId);
-
-  if (!selectedFamily) {
+  if (!selectedFamily || !store) {
     return (
       <FamilyPanel
         message={message}
@@ -130,11 +142,6 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
       />
     );
   }
-
-  const store = useMemo(
-    () => new SupabaseFeedingStore(client, selectedFamily.id, session.user.id),
-    [client, selectedFamily.id, session.user.id],
-  );
 
   return (
     <>
@@ -159,36 +166,80 @@ function CloudEnabledApp({ client }: { client: SupabaseClient }) {
   );
 }
 
-function AuthPanel({
+export function AuthPanel({
   message,
-  onSubmit,
+  onSendCode,
+  onVerifyCode,
 }: {
   message: string;
-  onSubmit: (email: string) => Promise<void>;
+  onSendCode: (email: string) => Promise<void>;
+  onVerifyCode: (email: string, token: string) => Promise<void>;
 }) {
   const [email, setEmail] = useState('');
+  const [token, setToken] = useState('');
+  const [hasSentCode, setHasSentCode] = useState(false);
   const [error, setError] = useState('');
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function sendCode(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
       setError('');
-      await onSubmit(email);
+      await onSendCode(email);
+      setHasSentCode(true);
     } catch {
-      setError('登录邮件发送失败');
+      setError('验证码发送失败，请稍后重试');
+    }
+  }
+
+  async function verifyCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      setError('');
+      await onVerifyCode(email, token);
+    } catch {
+      setError('验证码错误或已过期');
     }
   }
 
   return (
     <CloudPanel title="登录后同步家庭记录">
-      <form className="cloud-form" onSubmit={submit}>
+      <form className="cloud-form" onSubmit={hasSentCode ? verifyCode : sendCode}>
         <label>
           <span>邮箱</span>
           <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
         </label>
+
+        {hasSentCode ? (
+          <label>
+            <span>验证码</span>
+            <input
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={token}
+              onChange={(event) => setToken(event.target.value.trim())}
+              required
+            />
+          </label>
+        ) : null}
+
         <button className="primary-button" type="submit">
-          发送登录邮件
+          {hasSentCode ? '登录' : '发送验证码'}
         </button>
+
+        {hasSentCode ? (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => {
+              setToken('');
+              setHasSentCode(false);
+              setError('');
+            }}
+          >
+            重新发送验证码
+          </button>
+        ) : null}
+
         {message ? <p className="status-message">{message}</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
       </form>
